@@ -9,6 +9,7 @@
       "prefix": "app",
       "architect": {
         "build": {
+          
           "builder": "@angular-devkit/build-angular:application",
           "options": {
             "outputPath": "dist/hyhub-frontend",
@@ -16,6 +17,9 @@
             "browser": "src/main.ts",
             "polyfills": ["zone.js"],
             "tsConfig": "tsconfig.app.json",
+            "optimization": {
+              "fonts": false
+            },
             "styles": ["node_modules/@angular/material/prebuilt-themes/indigo-pink.css", "src/styles.css"],
             "assets": []
           }
@@ -29,7 +33,6 @@
       }
     }
   },
-  "defaultProject": "hyhub-frontend",
   "cli": {
     "analytics": "5a3e775c-b14f-46b6-8e3a-eeedc3e29d80"
   }

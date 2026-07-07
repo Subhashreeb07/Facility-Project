@@ -1,7 +1,13 @@
 import { CommonModule } from '@angular/common';
-import { Component, computed } from '@angular/core';
+import { Component, computed, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { FacilityBuilderStateService } from '../state/facility-builder-state.service';
+
+interface PublishedActivity {
+  id: string;
+  facilityLabel: string;
+  publishedOn: string;
+}
 
 @Component({
   selector: 'app-admin-dashboard-page',
@@ -22,12 +28,43 @@ import { FacilityBuilderStateService } from '../state/facility-builder-state.ser
             <h2 class="text-lg font-semibold text-slate-900">Recent Activities</h2>
             <a routerLink="/admin/facilities" class="text-sm font-semibold text-[#0f6cbd]">View all</a>
           </div>
-          <ul class="mt-4 space-y-3">
-            <li *ngFor="let row of recentActivities" class="rounded-xl bg-slate-50 p-3 text-sm text-slate-700">
-              <p class="font-semibold text-slate-900">{{ row.title }}</p>
-              <p>{{ row.subtitle }}</p>
-            </li>
-          </ul>
+
+          <div class="mt-4 overflow-hidden rounded-xl border border-slate-200">
+            <table class="min-w-full text-sm text-slate-700">
+              <thead class="bg-slate-50 text-left text-xs uppercase tracking-[0.08em] text-slate-500">
+                <tr>
+                  <th class="px-4 py-3">Facility Published</th>
+                  <th class="px-4 py-3">Published On</th>
+                  <th class="px-4 py-3 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let row of publishedActivities()" class="border-t border-slate-100">
+                  <td class="px-4 py-3 font-semibold text-slate-900">{{ row.facilityLabel }}</td>
+                  <td class="px-4 py-3">{{ row.publishedOn | date: 'mediumDate' }}</td>
+                  <td class="px-4 py-3 text-right">
+                    <button class="satori-secondary" (click)="viewActivity(row)">View</button>
+                  </td>
+                </tr>
+                <tr *ngIf="publishedActivities().length === 0" class="border-t border-slate-100">
+                  <td class="px-4 py-3 text-slate-500" colspan="3">No published Lunch or Transport facilities yet.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div *ngIf="selectedActivity() as activity" class="mt-4 rounded-xl border border-[#c7ddff] bg-[#f0f6ff] p-4">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p class="text-xs uppercase tracking-[0.12em] text-[#0f6cbd]">Activity Details</p>
+                <p class="mt-1 text-sm font-semibold text-slate-900">{{ activity.facilityLabel }}</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <button class="satori-primary" (click)="exportActivity(activity)">Export Excel</button>
+                <button class="satori-secondary" (click)="closeActivityView()">Close</button>
+              </div>
+            </div>
+          </div>
         </article>
 
         <article class="satori-card">
@@ -50,6 +87,8 @@ import { FacilityBuilderStateService } from '../state/facility-builder-state.ser
   `
 })
 export class AdminDashboardPageComponent {
+  private readonly teamLocations = ['Hyderabad', 'Kolkata'];
+
   readonly summaryCards = computed(() => {
     const facilities = this.state.facilities();
     const published = facilities.filter((f) => f.published).length;
@@ -72,11 +111,25 @@ export class AdminDashboardPageComponent {
       .slice(0, 4)
   );
 
-  readonly recentActivities = [
-    { title: 'Lunch published', subtitle: 'Updated cutoff to 11:00 AM and republished.' },
-    { title: 'Transport draft imported', subtitle: 'Team imported route schema from JSON.' },
-    { title: 'Parking duplicated', subtitle: 'Created Parking Copy for Hyderabad annex office.' }
-  ];
+  readonly selectedActivity = signal<PublishedActivity | null>(null);
+
+  readonly publishedActivities = computed<PublishedActivity[]>(() => {
+    const targetFacilities = this.state
+      .facilities()
+      .filter((facility) => facility.published)
+      .filter((facility) => {
+        const name = facility.facilityName.trim().toLowerCase();
+        return name === 'lunch' || name === 'transport';
+      });
+
+    return targetFacilities.flatMap((facility) =>
+      this.teamLocations.map((location) => ({
+        id: `${facility.id}-${location.toLowerCase()}`,
+        facilityLabel: `${facility.facilityName} - ${location}`,
+        publishedOn: facility.updatedAt
+      }))
+    );
+  });
 
   constructor(
     private readonly state: FacilityBuilderStateService,
@@ -94,5 +147,30 @@ export class AdminDashboardPageComponent {
 
   goReports(): void {
     this.router.navigateByUrl('/admin/reports');
+  }
+
+  viewActivity(activity: PublishedActivity): void {
+    this.selectedActivity.set(activity);
+  }
+
+  closeActivityView(): void {
+    this.selectedActivity.set(null);
+  }
+
+  exportActivity(activity: PublishedActivity): void {
+    const csv = [
+      'Facility Published,Published On',
+      `"${activity.facilityLabel}","${new Date(activity.publishedOn).toLocaleDateString('en-IN')}"`
+    ].join('\n');
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `${activity.facilityLabel.replace(/\s+/g, '_').toLowerCase()}_published_report.csv`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    document.body.removeChild(anchor);
+    URL.revokeObjectURL(url);
   }
 }
