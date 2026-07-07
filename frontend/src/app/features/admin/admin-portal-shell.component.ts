@@ -36,7 +36,7 @@ import { SessionService } from '../../core/services/session.service';
               <mat-icon>grid_view</mat-icon>
             </div>
             <div>
-              <p class="text-xs uppercase tracking-[0.12em] text-slate-400">Satori Admin</p>
+              <p class="text-xs uppercase tracking-[0.12em] text-slate-400">Admin</p>
               <p class="text-sm font-semibold">HyHub Control Plane</p>
             </div>
           </div>

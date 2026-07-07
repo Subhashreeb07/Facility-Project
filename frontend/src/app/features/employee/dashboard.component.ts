@@ -3,7 +3,7 @@ import { Component, OnDestroy, OnInit, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { Subject, interval } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
-import { DashboardFacility } from '../../core/models/employee-flow.models';
+import { DashboardFacility, EmployeeNotificationItem } from '../../core/models/employee-flow.models';
 import { AuthApiService } from '../../core/services/auth-api.service';
 import { EmployeeApiService } from '../../core/services/employee-api.service';
 import { SessionService } from '../../core/services/session.service';
@@ -23,11 +23,35 @@ import { ToastService } from '../../core/services/toast.service';
             <p class="mt-1 text-sm text-slate-600">Every card is loaded from published backend facility specifications.</p>
           </div>
           <div class="flex items-center gap-2 text-sm">
+            <button class="relative rounded-lg bg-[#f4f1ee] px-3 py-2 font-semibold text-[#374151]" (click)="toggleNotifications()">
+              Notifications
+              <span *ngIf="unreadNotifications() > 0" class="ml-1 rounded-full bg-rose-600 px-2 py-0.5 text-[10px] font-bold text-white">{{ unreadNotifications() }}</span>
+            </button>
             <button class="rounded-lg bg-[#f4f1ee] px-3 py-2 font-semibold text-[#374151]" (click)="goHistory()">Bookings</button>
             <button class="rounded-lg bg-[#f4f1ee] px-3 py-2 font-semibold text-[#374151]" (click)="goInvitations()">Invitations</button>
             <button class="rounded-lg bg-[#f4f1ee] px-3 py-2 font-semibold text-[#374151]" (click)="goProfile()">Profile</button>
             <button class="rounded-lg bg-[#9a562d] px-3 py-2 font-semibold text-white" (click)="logout()">Logout</button>
           </div>
+        </div>
+
+        <div class="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3" *ngIf="showNotificationPopup()">
+          <div class="mb-2 flex items-center justify-between">
+            <p class="text-sm font-semibold text-slate-900">Recent Notifications</p>
+            <button class="text-xs font-semibold text-brand-700 hover:text-brand-900" (click)="closeNotifications()">Close</button>
+          </div>
+          <div class="grid gap-2" *ngIf="notifications().length > 0; else noPopupNotifications">
+            <article *ngFor="let item of popupNotifications()" class="rounded-lg border border-slate-200 bg-white px-3 py-2">
+              <p class="text-xs font-semibold text-slate-500">{{ item.notificationType }} · {{ item.channelCode }}</p>
+              <p class="mt-1 text-sm text-slate-800">{{ extractMessage(item.messageBody) }}</p>
+              <div class="mt-2 flex items-center justify-between text-xs text-slate-500">
+                <span>{{ readableDate(item.sentAt || item.createdAt) }}</span>
+                <button *ngIf="item.statusCode !== 'READ'" class="font-semibold text-brand-700 hover:text-brand-900" (click)="markAsRead(item)">Mark Read</button>
+              </div>
+            </article>
+          </div>
+          <ng-template #noPopupNotifications>
+            <p class="text-sm text-slate-500">No notifications yet.</p>
+          </ng-template>
         </div>
       </header>
 
@@ -54,6 +78,41 @@ import { ToastService } from '../../core/services/toast.service';
           </div>
         </ng-template>
       </div>
+
+      <div class="mt-5 rounded-2xl bg-white p-5 shadow-sm md:p-6">
+        <div class="mb-3 flex items-center justify-between">
+          <h3 class="text-xl font-bold text-slate-900">Notification Section</h3>
+          <button class="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50" (click)="loadNotifications(true)">Refresh</button>
+        </div>
+
+        <div class="grid gap-2" *ngIf="notifications().length > 0; else emptyNotifications">
+          <article
+            *ngFor="let item of notifications()"
+            class="rounded-xl border p-3"
+            [ngClass]="item.statusCode === 'READ' ? 'border-slate-200 bg-slate-50' : 'border-amber-200 bg-amber-50/50'"
+          >
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <p class="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
+                {{ item.notificationType }} · {{ item.channelCode }}
+              </p>
+              <span class="rounded-full px-2 py-1 text-[10px] font-bold" [ngClass]="item.statusCode === 'READ' ? 'bg-slate-200 text-slate-700' : 'bg-emerald-100 text-emerald-700'">
+                {{ item.statusCode === 'READ' ? 'READ' : 'NEW' }}
+              </span>
+            </div>
+            <p class="mt-1 text-sm text-slate-800">{{ extractMessage(item.messageBody) }}</p>
+            <div class="mt-2 flex items-center justify-between text-xs text-slate-500">
+              <span>{{ readableDate(item.sentAt || item.createdAt) }}</span>
+              <button *ngIf="item.statusCode !== 'READ'" class="font-semibold text-brand-700 hover:text-brand-900" (click)="markAsRead(item)">Mark Read</button>
+            </div>
+          </article>
+        </div>
+
+        <ng-template #emptyNotifications>
+          <div class="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-500">
+            No notifications available yet.
+          </div>
+        </ng-template>
+      </div>
     </section>
 
     <ng-template #loadingState>
@@ -63,8 +122,13 @@ import { ToastService } from '../../core/services/toast.service';
 })
 export class DashboardComponent implements OnInit, OnDestroy {
   readonly facilities = signal<DashboardFacility[] | null>(null);
+  readonly notifications = signal<EmployeeNotificationItem[]>([]);
+  readonly unreadNotifications = signal(0);
+  readonly showNotificationPopup = signal(false);
+  readonly popupNotifications = signal<EmployeeNotificationItem[]>([]);
   private readonly destroy$ = new Subject<void>();
   private isLoading = false;
+  private shownPopupNotificationIds = new Set<number>();
 
   constructor(
     private readonly authApi: AuthApiService,
@@ -81,10 +145,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
     }
 
     this.loadFacilities();
+    this.loadNotifications();
 
     interval(5000)
       .pipe(takeUntil(this.destroy$))
-      .subscribe(() => this.loadFacilities(true));
+      .subscribe(() => {
+        this.loadFacilities(true);
+        this.loadNotifications(true);
+      });
 
     window.addEventListener('focus', this.handleWindowFocus);
   }
@@ -97,6 +165,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   private readonly handleWindowFocus = (): void => {
     this.loadFacilities(true);
+    this.loadNotifications(true);
   };
 
   private loadFacilities(silent = false): void {
@@ -129,6 +198,90 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   openFacility(facility: DashboardFacility): void {
     this.router.navigate(['/employee/facility', facility.facilityId, 'book']);
+  }
+
+  toggleNotifications(): void {
+    this.showNotificationPopup.update((state) => !state);
+    this.popupNotifications.set(this.notifications().slice(0, 5));
+  }
+
+  closeNotifications(): void {
+    this.showNotificationPopup.set(false);
+  }
+
+  extractMessage(raw: string): string {
+    if (!raw) {
+      return '';
+    }
+    return raw.replace(/^Subject:\s*.*\n/i, '').trim();
+  }
+
+  readableDate(value?: string | null): string {
+    if (!value) {
+      return 'Just now';
+    }
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? value : parsed.toLocaleString();
+  }
+
+  markAsRead(item: EmployeeNotificationItem): void {
+    if (item.statusCode === 'READ') {
+      return;
+    }
+
+    this.employeeApi.markNotificationRead(item.notificationId).subscribe({
+      next: () => {
+        this.notifications.update((items) =>
+          items.map((entry) =>
+            entry.notificationId === item.notificationId
+              ? { ...entry, statusCode: 'READ' }
+              : entry
+          )
+        );
+        this.popupNotifications.set(this.notifications().slice(0, 5));
+        this.unreadNotifications.set(this.notifications().filter((entry) => entry.statusCode !== 'READ').length);
+      },
+      error: () => this.toastService.show('Failed to update notification status', 'error')
+    });
+  }
+
+  loadNotifications(silent = false): void {
+    const employeeId = this.sessionService.getEmployeeId();
+    if (!employeeId) {
+      this.notifications.set([]);
+      this.unreadNotifications.set(0);
+      return;
+    }
+
+    this.employeeApi.getEmployeeNotifications(employeeId).subscribe({
+      next: (response) => {
+        const sorted = (response.items ?? []).sort((a, b) => {
+          const left = new Date(b.sentAt || b.createdAt || '').getTime();
+          const right = new Date(a.sentAt || a.createdAt || '').getTime();
+          return left - right;
+        });
+
+        this.notifications.set(sorted);
+        this.popupNotifications.set(sorted.slice(0, 5));
+
+        const unread = sorted.filter((item) => item.statusCode !== 'READ').length;
+        this.unreadNotifications.set(unread);
+
+        const latestUnread = sorted.find((item) => item.statusCode !== 'READ');
+        if (latestUnread && !this.shownPopupNotificationIds.has(latestUnread.notificationId)) {
+          this.shownPopupNotificationIds.add(latestUnread.notificationId);
+          this.showNotificationPopup.set(true);
+          if (!silent) {
+            this.toastService.show('New notification received', 'info');
+          }
+        }
+      },
+      error: () => {
+        if (!silent) {
+          this.toastService.show('Unable to load notifications', 'error');
+        }
+      }
+    });
   }
 
   iconEmoji(icon: string): string {

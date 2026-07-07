@@ -109,6 +109,13 @@ export class FacilityBookingComponent implements OnInit {
       })
       .filter((entry) => entry.value.length > 0);
 
+    if (responses.length === 0) {
+      const message = 'Please provide at least one field value before submitting.';
+      this.error.set(message);
+      this.toastService.show(message, 'error');
+      return;
+    }
+
     this.bookingApi
       .submitBooking({
         facilityId: facility.facilityId,

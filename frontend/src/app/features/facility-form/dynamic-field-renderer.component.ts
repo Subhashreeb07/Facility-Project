@@ -10,7 +10,7 @@ type RenderKind = 'input' | 'textarea' | 'dropdown' | 'radio' | 'checkbox' | 'fi
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule],
   template: `
-    <div class="grid gap-2" [ngClass]="{ 'md:col-span-2': isWideField() }">
+    <div class="grid gap-2" [formGroup]="form" [ngClass]="{ 'md:col-span-2': isWideField() }">
       <label class="text-sm font-medium text-slate-700">
         {{ field.label }} <span *ngIf="field.required" class="text-rose-600">*</span>
       </label>

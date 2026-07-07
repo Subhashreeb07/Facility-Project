@@ -92,6 +92,24 @@ export interface FacilitySpecificationResponse {
   rules: SpecificationRule;
 }
 
+export interface EmployeeNotificationItem {
+  notificationId: number;
+  employeeId: string;
+  bookingId?: number | null;
+  notificationType: string;
+  channelCode: string;
+  messageBody: string;
+  scheduledAt?: string | null;
+  sentAt?: string | null;
+  processedAt?: string | null;
+  statusCode: string;
+  createdAt?: string | null;
+}
+
+export interface EmployeeNotificationListResponse {
+  items: EmployeeNotificationItem[];
+}
+
 export interface SpecificationField {
   fieldId: number;
   label: string;

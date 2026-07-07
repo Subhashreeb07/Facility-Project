@@ -3,6 +3,7 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import {
   DashboardFacility,
+  EmployeeNotificationListResponse,
   EmployeeHomeResponse,
   EmployeeProfileResponse,
   FacilitySpecificationResponse,
@@ -35,5 +36,22 @@ export class EmployeeApiService {
 
   getFacilitySpecification(facilityId: number): Observable<FacilitySpecificationResponse> {
     return this.http.get<FacilitySpecificationResponse>(`${this.baseUrl}/facilities/${facilityId}/specification`);
+  }
+
+  getEmployeeNotifications(employeeId: string, statusCode?: string): Observable<EmployeeNotificationListResponse> {
+    const params: Record<string, string> = {};
+    if (statusCode && statusCode.trim().length > 0) {
+      params['statusCode'] = statusCode.trim();
+    }
+
+    return this.http.get<EmployeeNotificationListResponse>(`${this.baseUrl}/notifications/employee/${employeeId}`, {
+      params
+    });
+  }
+
+  markNotificationRead(notificationId: number): Observable<unknown> {
+    return this.http.patch(`${this.baseUrl}/notifications/${notificationId}/status`, {
+      statusCode: 'READ'
+    });
   }
 }

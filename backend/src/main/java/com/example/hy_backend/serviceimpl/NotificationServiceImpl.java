@@ -501,13 +501,19 @@ public class NotificationServiceImpl implements NotificationService {
         notification.setChannelCode(normalizeChannel(channelCode));
         notification.setMessageBody(messageBody.trim());
         notification.setScheduledAt(scheduledAt);
-        notification.setStatusCode(scheduledAt.isAfter(LocalDateTime.now()) ? "SCHEDULED" : "PENDING");
+        boolean scheduledForLater = scheduledAt.isAfter(LocalDateTime.now());
+        notification.setStatusCode(scheduledForLater ? "SCHEDULED" : "PENDING");
         notification.setRetryCount(0);
         notification.setMaxRetries(maxRetries);
         notification.setEscalated(false);
         notification.setCreatedAt(LocalDateTime.now());
 
         Notification saved = notificationRepository.save(notification);
+        if (!scheduledForLater) {
+            attemptDelivery(saved);
+            return toResponse(notificationRepository.findById(saved.getNotificationId()).orElse(saved));
+        }
+
         return toResponse(saved);
     }
 
