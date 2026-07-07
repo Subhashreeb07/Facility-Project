@@ -100,10 +100,49 @@ class FacilityServiceImplIntegrationTest {
 
         fieldDefinitionRepository.save(field);
 
-        FacilityDtos.PublishResponse publishResponse = facilityService.publishFacility(created.facilityId());
+        FacilityDtos.PublishResponse publishResponse = facilityService.publishFacility(
+            created.facilityId(),
+            new FacilityDtos.PublishRequest(List.of("HYDERABAD", "KOLKATA"))
+        );
 
         assertEquals(created.facilityId(), publishResponse.facilityId());
         assertTrue(facilityRepository.findById(created.facilityId()).orElseThrow().getPublished());
         assertFalse(facilityRepository.findById(created.facilityId()).orElseThrow().getFacilityName().isBlank());
+    }
+
+    @Test
+    void publishFacility_shouldEnableStatus_whenFacilityWasDisabled() {
+        FacilityDtos.FacilityCreateResponse created = facilityService.createFacility(
+                new FacilityDtos.FacilityCreateRequest(
+                        "Publish Status Integration " + UUID.randomUUID(),
+                        "publish status test",
+                        "General",
+                        "inventory_2",
+                        false
+                )
+        );
+
+        FieldDefinition field = new FieldDefinition();
+        field.setFacility(facilityRepository.findById(created.facilityId()).orElseThrow());
+        field.setLabel("Travel Purpose");
+        field.setFieldType(FieldType.DROPDOWN);
+        field.setRequired(true);
+        field.setDisplayOrder(1);
+
+        FieldOption option = new FieldOption();
+        option.setField(field);
+        option.setOptionValue("Office");
+        option.setDisplayOrder(1);
+        field.setOptions(List.of(option));
+
+        fieldDefinitionRepository.save(field);
+        facilityService.publishFacility(
+            created.facilityId(),
+            new FacilityDtos.PublishRequest(List.of("HYDERABAD"))
+        );
+
+        Facility updated = facilityRepository.findById(created.facilityId()).orElseThrow();
+        assertTrue(updated.getPublished());
+        assertTrue(updated.getStatus());
     }
 }

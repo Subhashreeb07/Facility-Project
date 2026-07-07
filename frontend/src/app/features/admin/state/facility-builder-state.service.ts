@@ -23,44 +23,9 @@ export interface FacilityBuilderRecord {
 
 @Injectable({ providedIn: 'root' })
 export class FacilityBuilderStateService {
-  private idCounter = 3;
+  private idCounter = 1;
 
-  readonly facilities = signal<FacilityBuilderRecord[]>([
-    {
-      id: 1,
-      facilityName: 'Lunch',
-      description: 'Daily lunch booking and meal preference capture',
-      category: 'Food',
-      icon: 'restaurant',
-      colorTheme: '#0f6cbd',
-      status: true,
-      published: true,
-      createdAt: new Date(Date.now() - 86400000 * 8).toISOString(),
-      updatedAt: new Date(Date.now() - 86400000 * 2).toISOString(),
-      fields: [
-        { label: 'Meal Type', fieldType: 'DROPDOWN', required: true, displayOrder: 1, options: ['Veg', 'Non-Veg'], placeholder: 'Select meal' },
-        { label: 'Allergies', fieldType: 'TEXTAREA', required: false, displayOrder: 2, placeholder: 'Mention allergies' }
-      ],
-      rules: { bookingDeadline: '11:00', allowCancellation: true, qrRequired: false, weekendEnabled: false }
-    },
-    {
-      id: 2,
-      facilityName: 'Transport',
-      description: 'Shuttle booking with pickup/drop configuration',
-      category: 'Mobility',
-      icon: 'directions_bus',
-      colorTheme: '#107c10',
-      status: true,
-      published: false,
-      createdAt: new Date(Date.now() - 86400000 * 5).toISOString(),
-      updatedAt: new Date(Date.now() - 86400000).toISOString(),
-      fields: [
-        { label: 'Pickup Point', fieldType: 'DROPDOWN', required: true, displayOrder: 1, options: ['Gate 1', 'Gate 2', 'Metro'] },
-        { label: 'Shift Time', fieldType: 'TIME_PICKER', required: true, displayOrder: 2 }
-      ],
-      rules: { bookingDeadline: '17:00', allowCancellation: true, qrRequired: true, maximumCapacity: 60 }
-    }
-  ]);
+  readonly facilities = signal<FacilityBuilderRecord[]>([]);
 
   readonly activeFacilityId = signal<number | null>(null);
   readonly searchTerm = signal('');
@@ -106,8 +71,27 @@ export class FacilityBuilderStateService {
 
       for (const summary of summaries) {
         const detail = await firstValueFrom(this.facilityAdminApi.getFacility(summary.facilityId));
-        const generated = await firstValueFrom(this.specificationApi.getGeneratedSpecification(summary.facilityId));
-        const record = this.fromSpecification(generated as FacilitySpecification);
+        let generated: FacilitySpecification | null = null;
+
+        try {
+          generated = await firstValueFrom(this.specificationApi.getGeneratedSpecification(summary.facilityId));
+        } catch {
+          generated = null;
+        }
+
+        const record = generated
+          ? this.fromSpecification(generated)
+          : this.fromSpecification({
+              facilityId: detail.facilityId,
+              facilityName: detail.facilityName,
+              description: detail.description,
+              category: detail.category,
+              icon: detail.icon,
+              status: detail.status,
+              published: detail.published,
+              fields: [],
+              rules: {}
+            });
 
         record.id = detail.facilityId;
         record.facilityName = detail.facilityName;
@@ -120,8 +104,12 @@ export class FacilityBuilderStateService {
       }
 
       this.facilities.set(records);
+      const maxId = records.reduce((max, item) => Math.max(max, item.id), 0);
+      this.idCounter = maxId + 1;
       if (!this.activeFacilityId() && records.length > 0) {
         this.activeFacilityId.set(records[0].id);
+      } else if (records.length === 0) {
+        this.activeFacilityId.set(null);
       }
     } finally {
       this.loading.set(false);

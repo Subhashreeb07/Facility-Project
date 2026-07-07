@@ -15,6 +15,8 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -42,8 +44,14 @@ public class EmployeeServiceImpl implements EmployeeService {
     }
 
     @Override
-    public List<EmployeeDtos.DashboardFacilityResponse> getDashboardFacilities() {
+    public List<EmployeeDtos.DashboardFacilityResponse> getDashboardFacilities(String employeeId) {
+        String normalizedEmployeeId = normalizeEmployeeId(employeeId);
+        String officeLocation = employeeRepository.findById(normalizedEmployeeId)
+                .map(employee -> normalizeLocation(employee.getOfficeLocation()))
+                .orElse(null);
+
         return facilityRepository.findByPublishedTrueAndStatusTrue().stream()
+                .filter(facility -> facilityVisibleForOffice(facility, officeLocation))
                 .map(f -> new EmployeeDtos.DashboardFacilityResponse(
                         f.getFacilityId(),
                         f.getFacilityName(),
@@ -129,13 +137,14 @@ public class EmployeeServiceImpl implements EmployeeService {
         Optional<Employee> employeeOpt = employeeRepository.findById(normalized);
         String name = employeeOpt.map(Employee::getFullName).orElse("Employee");
         String email = employeeOpt.map(Employee::getEmail).orElse(normalized.toLowerCase(Locale.ROOT) + "@hyhub.com");
+        String officeLocation = employeeOpt.map(Employee::getOfficeLocation).orElse("HYDERABAD");
 
         return new EmployeeDtos.EmployeeProfileResponse(
                 normalized,
                 name,
                 email,
                 "Global Workplace Operations",
-                "Hyderabad",
+                toDisplayLocation(officeLocation),
                 Math.toIntExact(totalBookings),
                 Math.toIntExact(activeBookings)
         );
@@ -186,4 +195,37 @@ public class EmployeeServiceImpl implements EmployeeService {
         }
         return "building";
     }
+
+        private boolean facilityVisibleForOffice(Facility facility, String officeLocation) {
+                List<String> targetedLocations = splitTargetLocations(facility.getTargetLocations());
+                if (targetedLocations.isEmpty() || officeLocation == null) {
+                        return true;
+                }
+                return targetedLocations.contains(officeLocation);
+        }
+
+        private List<String> splitTargetLocations(String raw) {
+                if (raw == null || raw.isBlank()) {
+                        return Collections.emptyList();
+                }
+                return Arrays.stream(raw.split(","))
+                                .map(this::normalizeLocation)
+                                .filter(value -> !value.isBlank())
+                                .toList();
+        }
+
+        private String normalizeLocation(String location) {
+                if (location == null) {
+                        return "";
+                }
+                return location.trim().toUpperCase(Locale.ROOT);
+        }
+
+        private String toDisplayLocation(String location) {
+                String normalized = normalizeLocation(location);
+                if (normalized.isBlank()) {
+                        return "Unknown";
+                }
+                return normalized.charAt(0) + normalized.substring(1).toLowerCase(Locale.ROOT);
+        }
 }

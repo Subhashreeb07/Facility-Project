@@ -16,7 +16,7 @@ public interface FacilityService {
 
     void deleteFacility(Long facilityId);
 
-    FacilityDtos.PublishResponse publishFacility(Long facilityId);
+    FacilityDtos.PublishResponse publishFacility(Long facilityId, FacilityDtos.PublishRequest request);
 
     EmployeeDtos.FacilitySpecificationResponse getFacilitySpecification(Long facilityId);
 }

@@ -15,11 +15,20 @@ import com.example.hy_backend.service.FacilityService;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class FacilityServiceImpl implements FacilityService {
+
+    private static final Set<String> ALLOWED_LOCATIONS = Set.of("HYDERABAD", "KOLKATA");
+    private static final List<String> DEFAULT_PUBLISH_LOCATIONS = List.of("HYDERABAD", "KOLKATA");
 
     private final FacilityRepository facilityRepository;
     private final FieldDefinitionRepository fieldDefinitionRepository;
@@ -87,9 +96,12 @@ public class FacilityServiceImpl implements FacilityService {
 
     @Override
     @Transactional
-    public FacilityDtos.PublishResponse publishFacility(Long facilityId) {
+    public FacilityDtos.PublishResponse publishFacility(Long facilityId, FacilityDtos.PublishRequest request) {
         Facility facility = getFacilityOrThrow(facilityId);
         validatePublishReadiness(facilityId);
+        List<String> normalizedLocations = normalizeTargetLocations(request == null ? null : request.targetLocations());
+        facility.setTargetLocations(String.join(",", normalizedLocations));
+        facility.setStatus(true);
         facility.setPublished(true);
         facilityRepository.save(facility);
         return new FacilityDtos.PublishResponse(facility.getFacilityId(), "Facility published successfully");
@@ -99,7 +111,7 @@ public class FacilityServiceImpl implements FacilityService {
     @Transactional
     public EmployeeDtos.FacilitySpecificationResponse getFacilitySpecification(Long facilityId) {
         Facility facility = getFacilityOrThrow(facilityId);
-        List<FieldDefinition> fields = fieldDefinitionRepository.findByFacilityFacilityIdOrderByDisplayOrderAsc(facilityId);
+        List<FieldDefinition> fields = fieldDefinitionRepository.findByFacilityFacilityIdWithOptions(facilityId);
         FacilityRule rule = facilityRuleRepository.findByFacilityFacilityId(facilityId).orElse(null);
 
         List<EmployeeDtos.SpecificationField> specificationFields = fields.stream()
@@ -150,12 +162,49 @@ public class FacilityServiceImpl implements FacilityService {
                 facility.getCategory(),
                 facility.getIcon(),
                 facility.getStatus(),
-                facility.getPublished()
+                facility.getPublished(),
+                splitTargetLocations(facility.getTargetLocations())
         );
     }
 
+    private List<String> normalizeTargetLocations(List<String> locations) {
+        if (locations == null || locations.isEmpty()) {
+            return DEFAULT_PUBLISH_LOCATIONS;
+        }
+
+        LinkedHashSet<String> normalized = new LinkedHashSet<>();
+        for (String location : locations) {
+            if (location == null || location.isBlank()) {
+                continue;
+            }
+
+            String canonical = location.trim().toUpperCase(Locale.ROOT);
+            if (!ALLOWED_LOCATIONS.contains(canonical)) {
+                throw new BadRequestException("Invalid location: " + location + ". Allowed values: HYDERABAD, KOLKATA");
+            }
+            normalized.add(canonical);
+        }
+
+        if (normalized.isEmpty()) {
+            throw new BadRequestException("At least one target location is required to publish");
+        }
+
+        return new ArrayList<>(normalized);
+    }
+
+    private List<String> splitTargetLocations(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return Collections.emptyList();
+        }
+
+        return Arrays.stream(raw.split(","))
+                .map(String::trim)
+                .filter(value -> !value.isBlank())
+                .collect(Collectors.toList());
+    }
+
     private void validatePublishReadiness(Long facilityId) {
-        List<FieldDefinition> fields = fieldDefinitionRepository.findByFacilityFacilityIdOrderByDisplayOrderAsc(facilityId);
+        List<FieldDefinition> fields = fieldDefinitionRepository.findByFacilityFacilityIdWithOptions(facilityId);
         if (fields.isEmpty()) {
             throw new BadRequestException("Cannot publish facility without dynamic fields");
         }

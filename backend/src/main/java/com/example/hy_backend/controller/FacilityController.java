@@ -79,8 +79,11 @@ public class FacilityController {
 
     @PostMapping("/{facilityId}/publish")
     @Operation(summary = "Publish facility")
-    public ResponseEntity<FacilityDtos.PublishResponse> publishFacility(@PathVariable Long facilityId) {
-        return ResponseEntity.ok(facilityService.publishFacility(facilityId));
+    public ResponseEntity<FacilityDtos.PublishResponse> publishFacility(
+            @PathVariable Long facilityId,
+            @RequestBody(required = false) FacilityDtos.PublishRequest request
+    ) {
+        return ResponseEntity.ok(facilityService.publishFacility(facilityId, request));
     }
 
     @GetMapping("/{facilityId}/specification")

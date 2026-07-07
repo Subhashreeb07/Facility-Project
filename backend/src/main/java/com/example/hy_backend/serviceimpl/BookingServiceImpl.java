@@ -15,6 +15,7 @@ import com.example.hy_backend.service.NotificationService;
 import com.example.hy_backend.service.RuleEngineService;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -50,6 +51,7 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
+    @Transactional
     public BookingDtos.SubmitBookingResponse submitBooking(BookingDtos.SubmitBookingRequest request) {
         String normalizedEmployeeId = request.employeeId().trim().toUpperCase(Locale.ROOT);
         String normalizedClientRequestId = normalizeClientRequestId(request.clientRequestId());

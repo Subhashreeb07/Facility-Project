@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -65,6 +66,89 @@ public class NotificationController {
             @RequestParam(required = false) Integer batchSize
     ) {
         return ResponseEntity.ok(notificationService.processPendingNotifications(batchSize));
+    }
+
+    @GetMapping("/templates")
+    @Operation(summary = "Get notification templates")
+    public ResponseEntity<java.util.List<NotificationDtos.TemplateResponse>> getTemplates() {
+        return ResponseEntity.ok(notificationService.getTemplates());
+    }
+
+    @PostMapping("/templates")
+    @Operation(summary = "Create or update notification template")
+    public ResponseEntity<NotificationDtos.TemplateResponse> saveTemplate(
+            @Valid @RequestBody NotificationDtos.TemplateUpsertRequest request
+    ) {
+        return ResponseEntity.ok(notificationService.saveTemplate(request));
+    }
+
+    @DeleteMapping("/templates/{templateId}")
+    @Operation(summary = "Delete notification template")
+    public ResponseEntity<Void> deleteTemplate(@PathVariable Long templateId) {
+        notificationService.deleteTemplate(templateId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/triggers")
+    @Operation(summary = "Get notification triggers")
+    public ResponseEntity<java.util.List<NotificationDtos.TriggerResponse>> getTriggers() {
+        return ResponseEntity.ok(notificationService.getTriggers());
+    }
+
+    @PostMapping("/triggers")
+    @Operation(summary = "Create or update notification trigger")
+    public ResponseEntity<NotificationDtos.TriggerResponse> saveTrigger(
+            @Valid @RequestBody NotificationDtos.TriggerUpsertRequest request
+    ) {
+        return ResponseEntity.ok(notificationService.saveTrigger(request));
+    }
+
+    @DeleteMapping("/triggers/{triggerId}")
+    @Operation(summary = "Delete notification trigger")
+    public ResponseEntity<Void> deleteTrigger(@PathVariable Long triggerId) {
+        notificationService.deleteTrigger(triggerId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/queue")
+    @Operation(summary = "Get notification queue")
+    public ResponseEntity<java.util.List<NotificationDtos.QueueItemResponse>> getQueue(
+            @RequestParam(required = false) String facility,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String channel,
+            @RequestParam(required = false) String date
+    ) {
+        return ResponseEntity.ok(notificationService.getQueue(facility, status, channel, date));
+    }
+
+    @GetMapping("/history")
+    @Operation(summary = "Get notification history")
+    public ResponseEntity<NotificationDtos.HistoryResponse> getHistory(
+            @RequestParam(required = false) String query,
+            @RequestParam(required = false) String facility,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String channel,
+            @RequestParam(required = false) String date,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer pageSize
+    ) {
+        return ResponseEntity.ok(notificationService.getHistory(query, facility, status, channel, date, page, pageSize));
+    }
+
+    @PostMapping("/test")
+    @Operation(summary = "Test notification template rendering")
+    public ResponseEntity<NotificationDtos.TestNotificationResponse> testNotification(
+            @Valid @RequestBody NotificationDtos.TestNotificationRequest request
+    ) {
+        return ResponseEntity.ok(notificationService.testNotification(request));
+    }
+
+    @PostMapping("/broadcast")
+    @Operation(summary = "Send or preview a filtered notification broadcast")
+    public ResponseEntity<NotificationDtos.BroadcastNotificationResponse> broadcastNotification(
+            @Valid @RequestBody NotificationDtos.BroadcastNotificationRequest request
+    ) {
+        return ResponseEntity.ok(notificationService.broadcastNotification(request));
     }
 
     @GetMapping("/ops/summary")

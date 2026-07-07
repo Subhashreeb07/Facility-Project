@@ -6,9 +6,20 @@ import {
   BookingSummaryResponse,
   BookingTrendResponse,
   FacilityUtilizationResponse,
+  NotificationChannel,
+  BroadcastNotificationRequest,
+  BroadcastNotificationResponse,
+  NotificationHistoryResponse,
   NotificationOpsSummaryResponse,
+  NotificationQueueItem,
+  NotificationTemplate,
+  NotificationTemplateUpsertRequest,
+  NotificationTrigger,
+  NotificationTriggerUpsertRequest,
   OperationalSummaryResponse,
-  ProcessNotificationsResponse
+  ProcessNotificationsResponse,
+  TestNotificationRequest,
+  TestNotificationResponse
 } from '../models/admin.models';
 import { SessionService } from './session.service';
 
@@ -95,6 +106,96 @@ export class AdminApiService {
 
     return this.http.get<NotificationOpsSummaryResponse>(`${this.baseUrl}/notifications/ops/summary`, {
       params,
+      headers: this.authHeader()
+    });
+  }
+
+  getNotificationTemplates(): Observable<NotificationTemplate[]> {
+    return this.http.get<NotificationTemplate[]>(`${this.baseUrl}/notifications/templates`, {
+      headers: this.authHeader()
+    });
+  }
+
+  saveNotificationTemplate(payload: NotificationTemplateUpsertRequest): Observable<NotificationTemplate> {
+    return this.http.post<NotificationTemplate>(`${this.baseUrl}/notifications/templates`, payload, {
+      headers: this.authHeader()
+    });
+  }
+
+  deleteNotificationTemplate(templateId: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/notifications/templates/${templateId}`, {
+      headers: this.authHeader()
+    });
+  }
+
+  getNotificationTriggers(): Observable<NotificationTrigger[]> {
+    return this.http.get<NotificationTrigger[]>(`${this.baseUrl}/notifications/triggers`, {
+      headers: this.authHeader()
+    });
+  }
+
+  saveNotificationTrigger(payload: NotificationTriggerUpsertRequest): Observable<NotificationTrigger> {
+    return this.http.post<NotificationTrigger>(`${this.baseUrl}/notifications/triggers`, payload, {
+      headers: this.authHeader()
+    });
+  }
+
+  deleteNotificationTrigger(triggerId: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/notifications/triggers/${triggerId}`, {
+      headers: this.authHeader()
+    });
+  }
+
+  getNotificationQueue(filters?: {
+    facility?: string | null;
+    status?: string | null;
+    channel?: NotificationChannel | null;
+    date?: string | null;
+  }): Observable<NotificationQueueItem[]> {
+    let params = new HttpParams();
+    if (filters?.facility) params = params.set('facility', filters.facility.trim());
+    if (filters?.status) params = params.set('status', filters.status.trim());
+    if (filters?.channel) params = params.set('channel', filters.channel);
+    if (filters?.date) params = params.set('date', filters.date.trim());
+
+    return this.http.get<NotificationQueueItem[]>(`${this.baseUrl}/notifications/queue`, {
+      params,
+      headers: this.authHeader()
+    });
+  }
+
+  getNotificationHistory(filters?: {
+    query?: string | null;
+    facility?: string | null;
+    status?: string | null;
+    channel?: NotificationChannel | null;
+    date?: string | null;
+    page?: number;
+    pageSize?: number;
+  }): Observable<NotificationHistoryResponse> {
+    let params = new HttpParams();
+    if (filters?.query) params = params.set('query', filters.query.trim());
+    if (filters?.facility) params = params.set('facility', filters.facility.trim());
+    if (filters?.status) params = params.set('status', filters.status.trim());
+    if (filters?.channel) params = params.set('channel', filters.channel);
+    if (filters?.date) params = params.set('date', filters.date.trim());
+    if (typeof filters?.page === 'number') params = params.set('page', String(filters.page));
+    if (typeof filters?.pageSize === 'number') params = params.set('pageSize', String(filters.pageSize));
+
+    return this.http.get<NotificationHistoryResponse>(`${this.baseUrl}/notifications/history`, {
+      params,
+      headers: this.authHeader()
+    });
+  }
+
+  testNotification(payload: TestNotificationRequest): Observable<TestNotificationResponse> {
+    return this.http.post<TestNotificationResponse>(`${this.baseUrl}/notifications/test`, payload, {
+      headers: this.authHeader()
+    });
+  }
+
+  sendNotificationBroadcast(payload: BroadcastNotificationRequest): Observable<BroadcastNotificationResponse> {
+    return this.http.post<BroadcastNotificationResponse>(`${this.baseUrl}/notifications/broadcast`, payload, {
       headers: this.authHeader()
     });
   }

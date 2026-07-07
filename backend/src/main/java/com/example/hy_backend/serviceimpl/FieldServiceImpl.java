@@ -103,6 +103,7 @@ public class FieldServiceImpl implements FieldService {
     }
 
     @Override
+    @Transactional
     public FieldDtos.FieldDetailResponse updateField(Long fieldId, FieldDtos.UpdateFieldRequest request) {
         FieldDefinition field = getFieldOrThrow(fieldId);
         FieldType parsedFieldType = parseFieldType(request.fieldType());

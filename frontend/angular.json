@@ -16,6 +16,11 @@
             "browser": "src/main.ts",
             "polyfills": ["zone.js"],
             "tsConfig": "tsconfig.app.json",
+            "optimization": {
+              "scripts": true,
+              "styles": true,
+              "fonts": false
+            },
             "styles": ["node_modules/@angular/material/prebuilt-themes/indigo-pink.css", "src/styles.css"],
             "assets": []
           }

@@ -17,7 +17,21 @@ import { FacilityField } from '../../../core/models/specification.models';
               <label class="mb-1 block font-semibold text-slate-700">{{ field.label }}<span *ngIf="field.required" class="text-rose-600">*</span></label>
               <ng-container [ngSwitch]="field.fieldType">
                 <select *ngSwitchCase="'DROPDOWN'" class="admin-preview-input"><option *ngFor="let option of field.options || []">{{ option }}</option></select>
+                <div *ngSwitchCase="'CHECKBOX'" class="space-y-1 rounded-lg border border-slate-200 bg-white p-2 text-[11px]">
+                  <label class="block" *ngFor="let option of field.options || []"><input type="checkbox" disabled /> {{ option }}</label>
+                </div>
+                <div *ngSwitchCase="'RADIO_BUTTON'" class="space-y-1 rounded-lg border border-slate-200 bg-white p-2 text-[11px]">
+                  <label class="block" *ngFor="let option of field.options || []"><input type="radio" name="preview-radio" disabled /> {{ option }}</label>
+                </div>
                 <textarea *ngSwitchCase="'TEXTAREA'" class="admin-preview-input" rows="2" [placeholder]="field.placeholder || ''"></textarea>
+                <input *ngSwitchCase="'DATE_PICKER'" class="admin-preview-input" type="date" />
+                <input *ngSwitchCase="'TIME_PICKER'" class="admin-preview-input" type="time" />
+                <input *ngSwitchCase="'NUMBER'" class="admin-preview-input" type="number" [placeholder]="field.placeholder || ''" />
+                <input *ngSwitchCase="'EMAIL'" class="admin-preview-input" type="email" [placeholder]="field.placeholder || ''" />
+                <input *ngSwitchCase="'PHONE'" class="admin-preview-input" type="tel" [placeholder]="field.placeholder || ''" />
+                <div *ngSwitchCase="'FILE_UPLOAD'" class="rounded-lg border border-dashed border-slate-300 bg-white p-2 text-[11px] text-slate-500">Upload area</div>
+                <div *ngSwitchCase="'QR_SCANNER'" class="rounded-lg border border-dashed border-slate-300 bg-white p-2 text-[11px] text-slate-500">QR scanner placeholder</div>
+                <div *ngSwitchCase="'SIGNATURE'" class="rounded-lg border border-dashed border-slate-300 bg-white p-2 text-[11px] text-slate-500">Signature pad placeholder</div>
                 <input *ngSwitchDefault class="admin-preview-input" [placeholder]="field.placeholder || ''" />
               </ng-container>
             </div>

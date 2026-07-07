@@ -59,11 +59,21 @@ public class SpecificationServiceImpl implements SpecificationService {
         }
 
         String facilityName = getRequiredText(specificationJson, "facilityName");
-        if (facilityRepository.existsByFacilityNameIgnoreCase(facilityName)) {
-            throw new BadRequestException("Facility already exists: " + facilityName);
+        Long incomingFacilityId = specificationJson.hasNonNull("facilityId") ? specificationJson.path("facilityId").asLong() : null;
+        Facility facility;
+
+        if (incomingFacilityId != null) {
+            facility = facilityRepository.findById(incomingFacilityId).orElseGet(Facility::new);
+            if (facilityRepository.existsByFacilityNameIgnoreCaseAndFacilityIdNot(facilityName, incomingFacilityId)) {
+                throw new BadRequestException("Another facility already exists with name: " + facilityName);
+            }
+        } else {
+            if (facilityRepository.existsByFacilityNameIgnoreCase(facilityName)) {
+                throw new BadRequestException("Facility already exists: " + facilityName + ". Use the same facilityId in JSON to update it.");
+            }
+            facility = new Facility();
         }
 
-        Facility facility = new Facility();
         facility.setFacilityName(facilityName);
         facility.setDescription(getOptionalText(specificationJson, "description"));
         facility.setCategory(getOptionalText(specificationJson, "category"));
@@ -77,6 +87,8 @@ public class SpecificationServiceImpl implements SpecificationService {
         if (specificationJson.hasNonNull("rules") && specificationJson.path("rules").isObject()) {
             FacilityRule rule = parseRule(specificationJson.path("rules"), facility);
             facility.setRule(rule);
+        } else {
+            facility.setRule(null);
         }
 
         Facility saved = facilityRepository.save(facility);
@@ -134,11 +146,12 @@ public class SpecificationServiceImpl implements SpecificationService {
     }
 
     @Override
+    @Transactional
     public JsonNode getGeneratedSpecification(Long facilityId) {
         Facility facility = facilityRepository.findById(facilityId)
                 .orElseThrow(() -> new ResourceNotFoundException("Facility not found with id: " + facilityId));
 
-        List<FieldDefinition> fields = fieldDefinitionRepository.findByFacilityFacilityIdOrderByDisplayOrderAsc(facilityId);
+        List<FieldDefinition> fields = fieldDefinitionRepository.findByFacilityFacilityIdWithOptions(facilityId);
         FacilityRule rule = facilityRuleRepository.findByFacilityFacilityId(facilityId).orElse(null);
 
         return specificationMapper.toJson(facility, fields, rule);

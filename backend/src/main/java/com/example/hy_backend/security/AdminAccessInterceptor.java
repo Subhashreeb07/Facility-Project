@@ -20,6 +20,10 @@ public class AdminAccessInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            return true;
+        }
+
         String authorization = request.getHeader("Authorization");
         String role = authService.resolveRole(authorization);
 

@@ -7,6 +7,7 @@ import com.example.hy_backend.service.EmployeeService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -25,8 +26,10 @@ public class EmployeeController {
 
     @GetMapping("/dashboard")
     @Operation(summary = "Get employee dashboard facilities")
-    public ResponseEntity<List<EmployeeDtos.DashboardFacilityResponse>> dashboard() {
-        return ResponseEntity.ok(employeeService.getDashboardFacilities());
+    public ResponseEntity<List<EmployeeDtos.DashboardFacilityResponse>> dashboard(
+            @RequestParam(required = false) String employeeId
+    ) {
+        return ResponseEntity.ok(employeeService.getDashboardFacilities(employeeId));
     }
 
     @GetMapping("/employee/home/{employeeId}")

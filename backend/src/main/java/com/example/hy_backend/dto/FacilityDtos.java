@@ -3,6 +3,8 @@ package com.example.hy_backend.dto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
+import java.util.List;
+
 public final class FacilityDtos {
 
     private FacilityDtos() {
@@ -39,8 +41,12 @@ public final class FacilityDtos {
             String category,
             String icon,
             Boolean status,
-            Boolean published
+            Boolean published,
+            List<String> targetLocations
     ) {
+    }
+
+    public record PublishRequest(List<String> targetLocations) {
     }
 
     public record PublishResponse(Long facilityId, String message) {

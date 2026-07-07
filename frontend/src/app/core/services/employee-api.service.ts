@@ -15,8 +15,10 @@ export class EmployeeApiService {
 
   constructor(private readonly http: HttpClient) {}
 
-  getDashboardFacilities(): Observable<DashboardFacility[]> {
-    return this.http.get<DashboardFacility[]>(`${this.baseUrl}/dashboard`);
+  getDashboardFacilities(employeeId: string): Observable<DashboardFacility[]> {
+    return this.http.get<DashboardFacility[]>(`${this.baseUrl}/dashboard`, {
+      params: { employeeId }
+    });
   }
 
   getEmployeeHomeSummary(employeeId: string): Observable<EmployeeHomeResponse> {

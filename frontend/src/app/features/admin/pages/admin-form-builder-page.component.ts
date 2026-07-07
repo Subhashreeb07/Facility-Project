@@ -16,6 +16,7 @@ import { BuilderPublishPanelComponent } from '../components/builder-publish-pane
 import { BuilderPreviewStepComponent } from '../components/builder-preview-step.component';
 import { BuilderRulesFormComponent } from '../components/builder-rules-form.component';
 import { FieldConfigDialogComponent } from '../components/field-config-dialog.component';
+import { PublishLocationsDialogComponent } from '../components/publish-locations-dialog.component';
 import { SpecificationImportDialogComponent } from '../components/specification-import-dialog.component';
 import { FacilityBuilderRecord, FacilityBuilderStateService } from '../state/facility-builder-state.service';
 import { FacilityField, FacilitySpecification } from '../../../core/models/specification.models';
@@ -44,14 +45,40 @@ import { SpecificationApiService } from '../../../core/services/specification-ap
   ],
   template: `
     <div class="space-y-6">
-      <section class="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 class="text-2xl font-bold text-slate-900">Create Facility Wizard</h2>
-          <p class="text-sm text-slate-600">Visual low-code builder. The platform generates specification JSON automatically.</p>
+      <section class="rounded-2xl bg-white p-4 shadow-sm">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 class="text-2xl font-bold text-slate-900">Create Facility Wizard</h2>
+            <p class="text-sm text-slate-600">Design dynamic facility forms, rules, and publish-ready specifications.</p>
+          </div>
+          <div class="flex gap-2">
+            <button class="satori-secondary" (click)="createNewDraft()">New Draft</button>
+            <button class="satori-secondary" (click)="openImportPrompt()">Import JSON</button>
+          </div>
         </div>
-        <div class="flex gap-2">
-          <button class="satori-secondary" (click)="createNewDraft()">New Draft</button>
-          <button class="satori-secondary" (click)="openImportPrompt()">Import JSON</button>
+
+        <div class="mt-4 grid gap-3 md:grid-cols-[1.4fr_repeat(3,minmax(0,1fr))]">
+          <label class="admin-field">
+            Working Facility
+            <select [value]="activeFacilityId() ?? ''" (change)="switchFacility($any($event.target).value)">
+              <option *ngFor="let facility of facilityLibrary()" [value]="facility.id">{{ facility.facilityName }}</option>
+            </select>
+          </label>
+
+          <article class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+            <p class="text-[11px] uppercase tracking-[0.08em] text-slate-500">Fields</p>
+            <p class="text-xl font-bold text-slate-900">{{ formFieldCount() }}</p>
+          </article>
+
+          <article class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+            <p class="text-[11px] uppercase tracking-[0.08em] text-slate-500">Required</p>
+            <p class="text-xl font-bold text-slate-900">{{ requiredFieldCount() }}</p>
+          </article>
+
+          <article class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+            <p class="text-[11px] uppercase tracking-[0.08em] text-slate-500">Option Sets</p>
+            <p class="text-xl font-bold text-slate-900">{{ optionSetCount() }}</p>
+          </article>
         </div>
       </section>
 
@@ -59,7 +86,12 @@ import { SpecificationApiService } from '../../../core/services/specification-ap
         <mat-step [stepControl]="basicForm" label="Basic Information">
           <form [formGroup]="basicForm" class="grid gap-4 py-4 md:grid-cols-2">
             <label class="admin-field">Facility Name<input type="text" formControlName="facilityName" /></label>
-            <label class="admin-field">Category<input type="text" formControlName="category" /></label>
+            <label class="admin-field">Category
+              <select formControlName="category">
+                <option *ngFor="let category of categoryOptions" [value]="category">{{ category }}</option>
+              </select>
+            </label>
+            <label class="admin-field" *ngIf="basicForm.value.category === 'Other'">Custom Category<input type="text" formControlName="customCategory" placeholder="Enter category" /></label>
             <label class="admin-field md:col-span-2">Description<textarea rows="3" formControlName="description"></textarea></label>
             <label class="admin-field">Icon
               <select formControlName="icon">
@@ -77,6 +109,7 @@ import { SpecificationApiService } from '../../../core/services/specification-ap
             <app-builder-field-list
               [fields]="orderedFields()"
               (add)="addField()"
+              (addWithType)="addFieldWithType($event)"
               (edit)="editField($event)"
               (duplicate)="duplicateField($event)"
               (remove)="deleteField($event)"
@@ -127,15 +160,51 @@ import { SpecificationApiService } from '../../../core/services/specification-ap
       </mat-stepper>
     </div>
   `,
-  styles: []
+  styles: [
+    `
+      .admin-field {
+        display: grid;
+        gap: 0.35rem;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #334155;
+      }
+
+      .admin-field input,
+      .admin-field textarea,
+      .admin-field select {
+        border: 1px solid #cbd5e1;
+        border-radius: 0.65rem;
+        padding: 0.55rem 0.7rem;
+        background: #ffffff;
+        font-size: 0.9rem;
+      }
+
+      .admin-inline {
+        display: flex;
+        align-items: center;
+        gap: 0.45rem;
+        font-size: 0.86rem;
+        color: #334155;
+      }
+    `
+  ]
 })
 export class AdminFormBuilderPageComponent {
   readonly iconChoices = ['restaurant', 'directions_bus', 'local_parking', 'badge', 'event', 'meeting_room', 'inventory_2'];
+  readonly categoryOptions = ['Food', 'Mobility', 'Parking', 'Workspace', 'Events', 'Visitors', 'Security', 'IT Services', 'Other'];
+
+  readonly facilityLibrary = computed(() => this.state.facilities());
+  readonly activeFacilityId = computed(() => this.state.activeFacilityId());
+  readonly formFieldCount = computed(() => this.orderedFields().length);
+  readonly requiredFieldCount = computed(() => this.orderedFields().filter((field) => field.required).length);
+  readonly optionSetCount = computed(() => this.orderedFields().filter((field) => (field.options ?? []).length > 0).length);
 
   readonly basicForm = this.fb.group({
     facilityName: ['', Validators.required],
     description: [''],
-    category: ['General', Validators.required],
+    category: ['Food', Validators.required],
+    customCategory: [''],
     icon: ['inventory_2'],
     colorTheme: ['#0f6cbd'],
     status: [true]
@@ -175,6 +244,15 @@ export class AdminFormBuilderPageComponent {
     private readonly facilityAdminApi: FacilityAdminApiService,
     private readonly specificationApi: SpecificationApiService
   ) {
+    this.bootstrap();
+  }
+
+  private async bootstrap(): Promise<void> {
+    try {
+      await this.state.loadFromBackend();
+    } catch {
+      // Keep local builder usable even if backend load fails.
+    }
     this.loadInitialFacility();
   }
 
@@ -190,6 +268,32 @@ export class AdminFormBuilderPageComponent {
       .open(FieldConfigDialogComponent, {
         width: '640px',
         data: { displayOrder: this.draftFields().length + 1 }
+      })
+      .afterClosed()
+      .subscribe((field?: FacilityField) => {
+        if (!field) {
+          return;
+        }
+        this.draftFields.update((items) => [...items, field]);
+        this.normalizeFieldOrder();
+        this.refreshJson();
+      });
+  }
+
+  addFieldWithType(fieldType: FacilityField['fieldType']): void {
+    this.dialog
+      .open(FieldConfigDialogComponent, {
+        width: '640px',
+        data: {
+          field: {
+            label: this.defaultLabelForFieldType(fieldType),
+            fieldType,
+            required: false,
+            displayOrder: this.draftFields().length + 1,
+            options: []
+          },
+          displayOrder: this.draftFields().length + 1
+        }
       })
       .afterClosed()
       .subscribe((field?: FacilityField) => {
@@ -259,7 +363,20 @@ export class AdminFormBuilderPageComponent {
 
   async publish(): Promise<void> {
     try {
-      const persisted = await this.persistBuilder(true);
+      const publishConfig = await firstValueFrom(
+        this.dialog
+          .open(PublishLocationsDialogComponent, {
+            width: '420px',
+            maxWidth: '95vw'
+          })
+          .afterClosed()
+      );
+
+      if (!publishConfig?.targetLocations?.length) {
+        return;
+      }
+
+      const persisted = await this.persistBuilder(true, publishConfig.targetLocations);
       this.state.upsertFacility(persisted);
       this.state.publishFacility(persisted.id);
       this.refreshJson();
@@ -311,8 +428,24 @@ export class AdminFormBuilderPageComponent {
       this.refreshJson();
       this.toast('Specification imported successfully');
     } catch (error: any) {
-      this.toast(error?.message ?? 'Invalid specification JSON', 'Close', 5000);
+      this.toast(error?.error?.message ?? error?.message ?? 'Invalid specification JSON', 'Close', 5000);
     }
+  }
+
+  switchFacility(facilityIdRaw: string): void {
+    const facilityId = Number(facilityIdRaw);
+    if (!Number.isFinite(facilityId)) {
+      return;
+    }
+
+    const selected = this.state.facilities().find((facility) => facility.id === facilityId);
+    if (!selected) {
+      return;
+    }
+
+    this.state.setActiveFacility(selected.id);
+    this.patchFromRecord(selected);
+    this.refreshJson();
   }
 
   private validateImportedSpecification(spec: FacilitySpecification): void {
@@ -341,10 +474,13 @@ export class AdminFormBuilderPageComponent {
   }
 
   private patchFromRecord(record: FacilityBuilderRecord): void {
+    const mappedCategory = this.categoryOptions.includes(record.category) ? record.category : 'Other';
+
     this.basicForm.patchValue({
       facilityName: record.facilityName,
       description: record.description,
-      category: record.category,
+      category: mappedCategory,
+      customCategory: mappedCategory === 'Other' ? record.category : '',
       icon: record.icon,
       colorTheme: record.colorTheme,
       status: record.status
@@ -378,7 +514,7 @@ export class AdminFormBuilderPageComponent {
       id: existing?.id ?? this.state.createDraft().id,
       facilityName: this.basicForm.value.facilityName?.trim() || 'Untitled Facility',
       description: this.basicForm.value.description?.trim() || '',
-      category: this.basicForm.value.category?.trim() || 'General',
+      category: this.resolveCategoryValue(),
       icon: this.basicForm.value.icon || 'inventory_2',
       colorTheme: this.basicForm.value.colorTheme || '#0f6cbd',
       status: Boolean(this.basicForm.value.status),
@@ -423,7 +559,7 @@ export class AdminFormBuilderPageComponent {
     this.snackBar.open(message, action, { duration });
   }
 
-  private async persistBuilder(publishAfterSave: boolean): Promise<FacilityBuilderRecord> {
+  private async persistBuilder(publishAfterSave: boolean, publishLocations: string[] = []): Promise<FacilityBuilderRecord> {
     const base = this.currentRecord(false);
     const existing = this.state.activeFacility();
 
@@ -508,7 +644,7 @@ export class AdminFormBuilderPageComponent {
     );
 
     if (publishAfterSave) {
-      await firstValueFrom(this.facilityAdminApi.publishFacility(facilityId));
+      await firstValueFrom(this.facilityAdminApi.publishFacility(facilityId, { targetLocations: publishLocations }));
     }
 
     await this.state.loadFromBackend();
@@ -584,5 +720,33 @@ export class AdminFormBuilderPageComponent {
 
   private fieldUsesOptions(type: string): boolean {
     return type === 'DROPDOWN' || type === 'CHECKBOX' || type === 'RADIO_BUTTON';
+  }
+
+  private resolveCategoryValue(): string {
+    const selected = (this.basicForm.value.category ?? '').trim();
+    if (selected === 'Other') {
+      const custom = (this.basicForm.value.customCategory ?? '').trim();
+      return custom || 'General';
+    }
+    return selected || 'General';
+  }
+
+  private defaultLabelForFieldType(type: FacilityField['fieldType']): string {
+    const map: Record<string, string> = {
+      TEXTBOX: 'Text Input',
+      TEXTAREA: 'Long Answer',
+      DROPDOWN: 'Select Option',
+      CHECKBOX: 'Checkbox Group',
+      RADIO_BUTTON: 'Single Choice',
+      DATE_PICKER: 'Select Date',
+      TIME_PICKER: 'Select Time',
+      EMAIL: 'Email Address',
+      PHONE: 'Phone Number',
+      NUMBER: 'Numeric Value',
+      FILE_UPLOAD: 'Upload File',
+      QR_SCANNER: 'QR Code',
+      SIGNATURE: 'Signature'
+    };
+    return map[type] ?? 'Field';
   }
 }

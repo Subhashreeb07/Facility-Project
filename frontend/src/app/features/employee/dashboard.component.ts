@@ -1,6 +1,8 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, signal } from '@angular/core';
 import { Router } from '@angular/router';
+import { Subject, interval } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { DashboardFacility } from '../../core/models/employee-flow.models';
 import { AuthApiService } from '../../core/services/auth-api.service';
 import { EmployeeApiService } from '../../core/services/employee-api.service';
@@ -59,8 +61,10 @@ import { ToastService } from '../../core/services/toast.service';
     </ng-template>
   `
 })
-export class DashboardComponent implements OnInit {
+export class DashboardComponent implements OnInit, OnDestroy {
   readonly facilities = signal<DashboardFacility[] | null>(null);
+  private readonly destroy$ = new Subject<void>();
+  private isLoading = false;
 
   constructor(
     private readonly authApi: AuthApiService,
@@ -76,14 +80,49 @@ export class DashboardComponent implements OnInit {
       return;
     }
 
-    this.employeeApi.getDashboardFacilities().subscribe({
+    this.loadFacilities();
+
+    interval(5000)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => this.loadFacilities(true));
+
+    window.addEventListener('focus', this.handleWindowFocus);
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+    window.removeEventListener('focus', this.handleWindowFocus);
+  }
+
+  private readonly handleWindowFocus = (): void => {
+    this.loadFacilities(true);
+  };
+
+  private loadFacilities(silent = false): void {
+    if (this.isLoading) {
+      return;
+    }
+
+    const employeeId = this.sessionService.getEmployeeId();
+    if (!employeeId) {
+      this.facilities.set([]);
+      return;
+    }
+
+    this.isLoading = true;
+    this.employeeApi.getDashboardFacilities(employeeId).subscribe({
       next: (facilities) => {
         this.facilities.set(facilities);
+        this.isLoading = false;
       },
       error: (err) => {
         const status = err?.status ? ` (${err.status})` : '';
-        this.toastService.show(`Unable to load dashboard facilities${status}`, 'error');
+        if (!silent) {
+          this.toastService.show(`Unable to load dashboard facilities${status}`, 'error');
+        }
         this.facilities.set([]);
+        this.isLoading = false;
       }
     });
   }

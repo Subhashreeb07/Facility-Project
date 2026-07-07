@@ -25,6 +25,15 @@ public class Employee {
     @Column(name = "role_code", nullable = false, length = 32)
     private String roleCode;
 
+    @Column(name = "office_location", nullable = false, length = 64)
+    private String officeLocation = "HYDERABAD";
+
+    @Column(name = "work_mode", nullable = false, length = 32)
+    private String workMode = "HYBRID";
+
+    @Column(name = "preference_tag", length = 64)
+    private String preferenceTag;
+
     @Column(nullable = false)
     private Boolean active = true;
 
@@ -78,12 +87,36 @@ public class Employee {
         this.roleCode = roleCode;
     }
 
+    public String getOfficeLocation() {
+        return officeLocation;
+    }
+
+    public void setOfficeLocation(String officeLocation) {
+        this.officeLocation = officeLocation;
+    }
+
     public Boolean getActive() {
         return active;
     }
 
     public void setActive(Boolean active) {
         this.active = active;
+    }
+
+    public String getWorkMode() {
+        return workMode;
+    }
+
+    public void setWorkMode(String workMode) {
+        this.workMode = workMode;
+    }
+
+    public String getPreferenceTag() {
+        return preferenceTag;
+    }
+
+    public void setPreferenceTag(String preferenceTag) {
+        this.preferenceTag = preferenceTag;
     }
 
     public LocalDateTime getCreatedAt() {

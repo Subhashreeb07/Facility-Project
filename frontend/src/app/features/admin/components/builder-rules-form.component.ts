@@ -7,21 +7,34 @@ import { FormGroup, ReactiveFormsModule } from '@angular/forms';
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule],
   template: `
-    <form [formGroup]="form" class="grid gap-4 py-4 md:grid-cols-3">
-      <label class="admin-field">Booking Start Time<input type="time" formControlName="bookingStartTime" /></label>
-      <label class="admin-field">Booking End Time<input type="time" formControlName="bookingEndTime" /></label>
-      <label class="admin-field">Booking Deadline<input type="time" formControlName="bookingDeadline" /></label>
-      <label class="admin-field">Reminder Time<input type="time" formControlName="reminderTime" /></label>
-      <label class="admin-field">Maximum Capacity<input type="number" formControlName="maximumCapacity" /></label>
-      <label class="admin-field">Cancellation Deadline<input type="time" formControlName="cancellationDeadline" /></label>
-      <label class="admin-field">Booking Window<input type="text" formControlName="bookingWindow" placeholder="e.g. 7 days" /></label>
-      <label class="admin-inline"><input type="checkbox" formControlName="allowCancellation" /> Allow Cancellation</label>
-      <label class="admin-inline"><input type="checkbox" formControlName="qrRequired" /> QR Required</label>
-      <label class="admin-inline"><input type="checkbox" formControlName="approvalRequired" /> Approval Required</label>
-      <label class="admin-inline"><input type="checkbox" formControlName="regularCommuteEnabled" /> Regular Commute</label>
-      <label class="admin-inline"><input type="checkbox" formControlName="autoCloseFacility" /> Auto Close Facility</label>
-      <label class="admin-inline"><input type="checkbox" formControlName="weekendEnabled" /> Weekend Enabled</label>
-      <label class="admin-inline"><input type="checkbox" formControlName="holidayEnabled" /> Holiday Enabled</label>
+    <form [formGroup]="form" class="space-y-4 py-4">
+      <section class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+        <h4 class="text-sm font-semibold text-slate-900">Timing Rules</h4>
+        <p class="text-xs text-slate-500">Define when bookings can be created and when reminders trigger.</p>
+        <div class="mt-3 grid gap-4 md:grid-cols-3">
+          <label class="admin-field">Booking Start Time<input type="time" formControlName="bookingStartTime" /></label>
+          <label class="admin-field">Booking End Time<input type="time" formControlName="bookingEndTime" /></label>
+          <label class="admin-field">Booking Deadline<input type="time" formControlName="bookingDeadline" /></label>
+          <label class="admin-field">Reminder Time<input type="time" formControlName="reminderTime" /></label>
+          <label class="admin-field">Cancellation Deadline<input type="time" formControlName="cancellationDeadline" /></label>
+          <label class="admin-field">Booking Window<input type="text" formControlName="bookingWindow" placeholder="e.g. 7 days" /></label>
+        </div>
+      </section>
+
+      <section class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+        <h4 class="text-sm font-semibold text-slate-900">Capacity and Validation</h4>
+        <p class="text-xs text-slate-500">Control booking limits and verification requirements.</p>
+        <div class="mt-3 grid gap-4 md:grid-cols-3">
+          <label class="admin-field">Maximum Capacity<input type="number" min="1" formControlName="maximumCapacity" /></label>
+          <label class="admin-inline"><input type="checkbox" formControlName="allowCancellation" /> Allow Cancellation</label>
+          <label class="admin-inline"><input type="checkbox" formControlName="qrRequired" /> QR Required</label>
+          <label class="admin-inline"><input type="checkbox" formControlName="approvalRequired" /> Approval Required</label>
+          <label class="admin-inline"><input type="checkbox" formControlName="regularCommuteEnabled" /> Regular Commute</label>
+          <label class="admin-inline"><input type="checkbox" formControlName="autoCloseFacility" /> Auto Close Facility</label>
+          <label class="admin-inline"><input type="checkbox" formControlName="weekendEnabled" /> Weekend Enabled</label>
+          <label class="admin-inline"><input type="checkbox" formControlName="holidayEnabled" /> Holiday Enabled</label>
+        </div>
+      </section>
     </form>
   `,
   styles: [

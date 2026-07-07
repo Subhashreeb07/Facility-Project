@@ -6,6 +6,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { FacilityBuilderStateService } from '../state/facility-builder-state.service';
 import { ConfirmDialogComponent } from '../components/confirm-dialog.component';
 import { FacilityAdminApiService } from '../../../core/services/facility-admin-api.service';
+import { PublishLocationsDialogComponent } from '../components/publish-locations-dialog.component';
 import { firstValueFrom } from 'rxjs';
 
 @Component({
@@ -84,8 +85,21 @@ export class AdminFacilitiesPageComponent {
     this.router.navigateByUrl('/admin/form-builder');
   }
 
-  publishFacility(id: number): void {
-    this.facilityAdminApi.publishFacility(id).subscribe({
+  async publishFacility(id: number): Promise<void> {
+    const publishConfig = await firstValueFrom(
+      this.dialog
+        .open(PublishLocationsDialogComponent, {
+          width: '420px',
+          maxWidth: '95vw'
+        })
+        .afterClosed()
+    );
+
+    if (!publishConfig?.targetLocations?.length) {
+      return;
+    }
+
+    this.facilityAdminApi.publishFacility(id, { targetLocations: publishConfig.targetLocations }).subscribe({
       next: () => {
         this.state.publishFacility(id);
         this.snackBar.open('Facility published', 'OK', { duration: 2000 });

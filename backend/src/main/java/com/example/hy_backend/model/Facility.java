@@ -28,6 +28,9 @@ public class Facility {
     @Column(nullable = false)
     private Boolean published = false;
 
+    @Column(name = "target_locations", length = 255)
+    private String targetLocations;
+
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
@@ -105,6 +108,14 @@ public class Facility {
 
     public void setPublished(Boolean published) {
         this.published = published;
+    }
+
+    public String getTargetLocations() {
+        return targetLocations;
+    }
+
+    public void setTargetLocations(String targetLocations) {
+        this.targetLocations = targetLocations;
     }
 
     public LocalDateTime getCreatedAt() {

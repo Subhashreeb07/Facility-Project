@@ -39,6 +39,10 @@ export interface PublishResponse {
   message: string;
 }
 
+export interface PublishRequest {
+  targetLocations: string[];
+}
+
 export interface FieldRequest {
   label: string;
   fieldType: string;
@@ -66,6 +70,16 @@ export interface FieldDetailResponse {
 }
 
 export interface RuleRequest {
+  bookingDeadline?: string | null;
+  bookingStartTime?: string | null;
+  reminderTime?: string | null;
+  qrRequired?: boolean;
+  allowCancellation?: boolean;
+  maximumCapacity?: number | null;
+  regularCommuteEnabled?: boolean;
+}
+
+export interface RuleResponse {
   bookingDeadline?: string | null;
   bookingStartTime?: string | null;
   reminderTime?: string | null;
@@ -114,8 +128,8 @@ export class FacilityAdminApiService {
     });
   }
 
-  publishFacility(facilityId: number): Observable<PublishResponse> {
-    return this.http.post<PublishResponse>(`${this.baseUrl}/facilities/${facilityId}/publish`, null, {
+  publishFacility(facilityId: number, payload: PublishRequest): Observable<PublishResponse> {
+    return this.http.post<PublishResponse>(`${this.baseUrl}/facilities/${facilityId}/publish`, payload, {
       headers: this.authHeader()
     });
   }
@@ -146,6 +160,12 @@ export class FacilityAdminApiService {
 
   saveRules(facilityId: number, payload: RuleRequest): Observable<unknown> {
     return this.http.post(`${this.baseUrl}/facilities/${facilityId}/rules`, payload, {
+      headers: this.authHeader()
+    });
+  }
+
+  getRules(facilityId: number): Observable<RuleResponse> {
+    return this.http.get<RuleResponse>(`${this.baseUrl}/facilities/${facilityId}/rules`, {
       headers: this.authHeader()
     });
   }
