@@ -25,6 +25,12 @@ public class AuthController {
         this.authService = authService;
     }
 
+    @PostMapping("/register")
+    @Operation(summary = "Register employee for first-time sign in")
+    public ResponseEntity<AuthDtos.LoginResponse> register(@Valid @RequestBody AuthDtos.RegisterRequest request) {
+        return ResponseEntity.ok(authService.register(request));
+    }
+
     @PostMapping("/login")
     @Operation(summary = "Login employee")
     public ResponseEntity<AuthDtos.LoginResponse> login(@Valid @RequestBody AuthDtos.LoginRequest request) {

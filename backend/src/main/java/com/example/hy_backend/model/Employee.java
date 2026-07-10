@@ -22,6 +22,12 @@ public class Employee {
     @Column(nullable = false, unique = true, length = 255)
     private String email;
 
+    @Column(length = 120)
+    private String department;
+
+    @Column(name = "password_hash", length = 255)
+    private String passwordHash;
+
     @Column(name = "role_code", nullable = false, length = 32)
     private String roleCode;
 
@@ -85,6 +91,22 @@ public class Employee {
 
     public void setRoleCode(String roleCode) {
         this.roleCode = roleCode;
+    }
+
+    public String getDepartment() {
+        return department;
+    }
+
+    public void setDepartment(String department) {
+        this.department = department;
+    }
+
+    public String getPasswordHash() {
+        return passwordHash;
+    }
+
+    public void setPasswordHash(String passwordHash) {
+        this.passwordHash = passwordHash;
     }
 
     public String getOfficeLocation() {

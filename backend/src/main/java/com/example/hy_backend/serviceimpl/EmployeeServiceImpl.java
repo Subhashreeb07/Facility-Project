@@ -137,13 +137,14 @@ public class EmployeeServiceImpl implements EmployeeService {
         Optional<Employee> employeeOpt = employeeRepository.findById(normalized);
         String name = employeeOpt.map(Employee::getFullName).orElse("Employee");
         String email = employeeOpt.map(Employee::getEmail).orElse(normalized.toLowerCase(Locale.ROOT) + "@hyhub.com");
+        String department = employeeOpt.map(Employee::getDepartment).filter(value -> value != null && !value.isBlank()).orElse("--");
         String officeLocation = employeeOpt.map(Employee::getOfficeLocation).orElse("HYDERABAD");
 
         return new EmployeeDtos.EmployeeProfileResponse(
                 normalized,
                 name,
                 email,
-                "Global Workplace Operations",
+                department,
                 toDisplayLocation(officeLocation),
                 Math.toIntExact(totalBookings),
                 Math.toIntExact(activeBookings)

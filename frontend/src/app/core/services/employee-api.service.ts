@@ -50,8 +50,6 @@ export class EmployeeApiService {
   }
 
   markNotificationRead(notificationId: number): Observable<unknown> {
-    return this.http.patch(`${this.baseUrl}/notifications/${notificationId}/status`, {
-      statusCode: 'READ'
-    });
+    return this.http.post(`${this.baseUrl}/notifications/${notificationId}/read`, {});
   }
 }

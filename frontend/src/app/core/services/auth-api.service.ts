@@ -1,7 +1,7 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
-import { CurrentUserResponse, LoginRequest, LoginResponse, MessageResponse } from '../models/employee-flow.models';
+import { CurrentUserResponse, LoginRequest, LoginResponse, MessageResponse, RegisterRequest } from '../models/employee-flow.models';
 
 @Injectable({ providedIn: 'root' })
 export class AuthApiService {
@@ -11,6 +11,10 @@ export class AuthApiService {
 
   login(payload: LoginRequest): Observable<LoginResponse> {
     return this.http.post<LoginResponse>(`${this.baseUrl}/login`, payload);
+  }
+
+  register(payload: RegisterRequest): Observable<LoginResponse> {
+    return this.http.post<LoginResponse>(`${this.baseUrl}/register`, payload);
   }
 
   currentUser(token: string): Observable<CurrentUserResponse> {

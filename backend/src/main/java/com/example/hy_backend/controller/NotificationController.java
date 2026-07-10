@@ -176,6 +176,14 @@ public class NotificationController {
         ));
     }
 
+    @PostMapping("/{notificationId}/read")
+    @Operation(summary = "Mark notification as read")
+    public ResponseEntity<NotificationDtos.NotificationResponse> markRead(@PathVariable Long notificationId) {
+        return ResponseEntity.ok(notificationService.markNotificationStatus(
+                new NotificationDtos.MarkNotificationRequest(notificationId, "READ")
+        ));
+    }
+
     public record NotificationStatusRequest(@NotBlank String statusCode) {
     }
 }

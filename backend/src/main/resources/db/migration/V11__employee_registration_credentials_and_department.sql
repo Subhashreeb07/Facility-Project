@@ -1,0 +1,5 @@
+ALTER TABLE employees
+    ADD COLUMN IF NOT EXISTS password_hash VARCHAR(255);
+
+ALTER TABLE employees
+    ADD COLUMN IF NOT EXISTS department VARCHAR(120);

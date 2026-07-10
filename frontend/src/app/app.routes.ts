@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { adminGuard } from './core/admin.guard';
 import { authGuard } from './core/auth.guard';
+import { employeeGuard } from './core/employee.guard';
 import { AdminPortalShellComponent } from './features/admin/admin-portal-shell.component';
 import { AdminDashboardPageComponent } from './features/admin/pages/admin-dashboard-page.component';
 import { AdminFacilitiesPageComponent } from './features/admin/pages/admin-facilities-page.component';
@@ -11,9 +12,9 @@ import { AdminRulesPageComponent } from './features/admin/pages/admin-rules-page
 import { BookingDetailComponent } from './features/employee/booking-detail.component';
 import { BookingHistoryComponent } from './features/employee/booking-history.component';
 import { DashboardComponent } from './features/employee/dashboard.component';
+import { EmployeeNotificationsComponent } from './features/employee/employee-notifications.component';
 import { EmployeePortalShellComponent } from './features/employee/employee-portal-shell.component';
 import { FacilityBookingComponent } from './features/employee/facility-booking.component';
-import { InvitationsComponent } from './features/employee/invitations.component';
 import { LandingRedirectComponent } from './features/employee/landing-redirect.component';
 import { LoginComponent } from './features/employee/login.component';
 import { ProfileComponent } from './features/employee/profile.component';
@@ -66,12 +67,16 @@ export const routes: Routes = [
   },
   {
     path: 'employee',
-    canActivate: [authGuard],
+    canActivate: [authGuard, employeeGuard],
     component: EmployeePortalShellComponent,
     children: [
       {
         path: 'dashboard',
         component: DashboardComponent
+      },
+      {
+        path: 'notifications',
+        component: EmployeeNotificationsComponent
       },
       {
         path: 'facility/:facilityId/book',
@@ -80,10 +85,6 @@ export const routes: Routes = [
       {
         path: 'history',
         component: BookingHistoryComponent
-      },
-      {
-        path: 'invitations',
-        component: InvitationsComponent
       },
       {
         path: 'profile',

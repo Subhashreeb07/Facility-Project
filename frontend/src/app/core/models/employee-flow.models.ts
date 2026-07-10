@@ -3,6 +3,15 @@ export interface LoginRequest {
   password: string;
 }
 
+export interface RegisterRequest {
+  employeeId: string;
+  name: string;
+  email: string;
+  password: string;
+  department?: string;
+  officeLocation?: string;
+}
+
 export interface LoginResponse {
   token: string;
   employeeId: string;

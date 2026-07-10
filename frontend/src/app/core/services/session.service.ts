@@ -9,6 +9,8 @@ interface SessionState {
 @Injectable({ providedIn: 'root' })
 export class SessionService {
   private readonly storageKey = 'hyhub_employee_session';
+  private readonly legacyStorage = localStorage;
+  private readonly storage = sessionStorage;
   readonly state = signal<SessionState | null>(this.readFromStorage());
 
   setFromLogin(response: LoginResponse): void {
@@ -21,7 +23,7 @@ export class SessionService {
         role: response.role
       }
     };
-    localStorage.setItem(this.storageKey, JSON.stringify(next));
+    this.storage.setItem(this.storageKey, JSON.stringify(next));
     this.state.set(next);
   }
 
@@ -36,12 +38,13 @@ export class SessionService {
       user
     };
 
-    localStorage.setItem(this.storageKey, JSON.stringify(next));
+    this.storage.setItem(this.storageKey, JSON.stringify(next));
     this.state.set(next);
   }
 
   clear(): void {
-    localStorage.removeItem(this.storageKey);
+    this.storage.removeItem(this.storageKey);
+    this.legacyStorage.removeItem(this.storageKey);
     this.state.set(null);
   }
 
@@ -58,15 +61,28 @@ export class SessionService {
   }
 
   private readFromStorage(): SessionState | null {
-    const raw = localStorage.getItem(this.storageKey);
-    if (!raw) {
+    const sessionRaw = this.storage.getItem(this.storageKey);
+    if (sessionRaw) {
+      try {
+        return JSON.parse(sessionRaw) as SessionState;
+      } catch {
+        this.storage.removeItem(this.storageKey);
+      }
+    }
+
+    // Migrate legacy shared session from localStorage to tab-scoped sessionStorage.
+    const legacyRaw = this.legacyStorage.getItem(this.storageKey);
+    if (!legacyRaw) {
       return null;
     }
 
     try {
-      return JSON.parse(raw) as SessionState;
+      const parsed = JSON.parse(legacyRaw) as SessionState;
+      this.storage.setItem(this.storageKey, JSON.stringify(parsed));
+      this.legacyStorage.removeItem(this.storageKey);
+      return parsed;
     } catch {
-      localStorage.removeItem(this.storageKey);
+      this.legacyStorage.removeItem(this.storageKey);
       return null;
     }
   }

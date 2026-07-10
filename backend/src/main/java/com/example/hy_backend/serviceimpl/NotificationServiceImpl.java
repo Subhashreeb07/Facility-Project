@@ -634,19 +634,33 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     private void validateStatusTransition(String currentStatus, String targetStatus) {
-        if (!ALLOWED_STATUSES.contains(currentStatus) || !ALLOWED_STATUSES.contains(targetStatus)) {
+        String normalizedCurrent = currentStatus == null ? "" : currentStatus.trim().toUpperCase(Locale.ROOT);
+        String normalizedTarget = targetStatus == null ? "" : targetStatus.trim().toUpperCase(Locale.ROOT);
+
+        if (!ALLOWED_STATUSES.contains(normalizedTarget)) {
             throw new BadRequestException("Unsupported notification status transition");
         }
 
-        if ("SENT".equals(currentStatus) && !("READ".equals(targetStatus) || "CANCELLED".equals(targetStatus))) {
+        if ("READ".equals(normalizedTarget)) {
+            if ("READ".equals(normalizedCurrent) || "CANCELLED".equals(normalizedCurrent)) {
+                throw new BadRequestException("Final notification status cannot be changed");
+            }
+            return;
+        }
+
+        if (!ALLOWED_STATUSES.contains(normalizedCurrent)) {
+            throw new BadRequestException("Unsupported current notification status: " + currentStatus);
+        }
+
+        if ("SENT".equals(normalizedCurrent) && !("READ".equals(normalizedTarget) || "CANCELLED".equals(normalizedTarget))) {
             throw new BadRequestException("SENT notifications can only move to READ or CANCELLED");
         }
 
-        if ("ESCALATED".equals(currentStatus) && !"CANCELLED".equals(targetStatus)) {
+        if ("ESCALATED".equals(normalizedCurrent) && !"CANCELLED".equals(normalizedTarget)) {
             throw new BadRequestException("ESCALATED notifications can only move to CANCELLED");
         }
 
-        if ("READ".equals(currentStatus) || "CANCELLED".equals(currentStatus)) {
+        if ("READ".equals(normalizedCurrent) || "CANCELLED".equals(normalizedCurrent)) {
             throw new BadRequestException("Final notification status cannot be changed");
         }
     }

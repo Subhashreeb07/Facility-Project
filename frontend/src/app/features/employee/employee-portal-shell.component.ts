@@ -34,6 +34,10 @@ import { SessionService } from '../../core/services/session.service';
               src="https://hyland.atlassian.net/s/-s1g255/b/0/23f31f9f9a8155235832888b764f7e4e/_/jira-logo-scaled.png"
               alt="Hyland logo"
             />
+            <div class="hidden md:block">
+              <p class="text-xs font-semibold uppercase tracking-[0.14em] text-[#0f6cbd]">Employee Portal</p>
+              <p class="text-sm font-semibold text-slate-900">Welcome back, {{ employeeDisplayName() }}</p>
+            </div>
           </div>
 
           <label class="portal-search flex min-w-[240px] flex-1 items-center gap-2 px-4 py-2">
@@ -52,10 +56,17 @@ import { SessionService } from '../../core/services/session.service';
               matBadgeSize="small"
               (click)="openNotifications()"
             ><mat-icon>notifications_none</mat-icon></button>
-            <button mat-button [matMenuTriggerFor]="profileMenu" class="!min-w-0 !rounded-full !border !border-slate-200 !bg-white !px-2">
+            <div class="hidden text-right lg:block">
+              <p class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Employee</p>
+              <p class="text-sm font-semibold text-slate-900">{{ employeeDisplayName() }}</p>
+            </div>
+            <button mat-button class="!min-w-0 !rounded-full !border !border-slate-200 !bg-white !px-2" (click)="openNotifications()" aria-label="Open employee notifications">
               <div class="flex h-8 w-8 items-center justify-center rounded-full bg-[#0f6cbd] text-xs font-bold text-white">
                 {{ initials() }}
               </div>
+            </button>
+            <button mat-icon-button [matMenuTriggerFor]="profileMenu" class="!text-slate-600" aria-label="Open profile menu">
+              <mat-icon>more_vert</mat-icon>
             </button>
           </div>
         </div>
@@ -84,8 +95,8 @@ import { SessionService } from '../../core/services/session.service';
 export class EmployeePortalShellComponent implements OnInit, OnDestroy {
   readonly navItems = [
     { label: 'Home', icon: 'dashboard', link: '/employee/dashboard' },
+    { label: 'Notifications', icon: 'notifications', link: '/employee/notifications' },
     { label: 'My bookings', icon: 'event_note', link: '/employee/history' },
-    { label: 'Invitations', icon: 'mail', link: '/employee/invitations' },
     { label: 'Profile', icon: 'badge', link: '/employee/profile' }
   ];
   readonly unreadNotifications = signal(0);
@@ -118,12 +129,20 @@ export class EmployeePortalShellComponent implements OnInit, OnDestroy {
     return parts.map((part) => part[0]?.toUpperCase() ?? '').join('') || 'E';
   }
 
+  employeeDisplayName(): string {
+    const name = this.sessionService.state()?.user?.name?.trim();
+    if (!name) {
+      return 'Employee';
+    }
+    return name;
+  }
+
   goDashboard(): void {
     this.router.navigateByUrl('/employee/dashboard');
   }
 
   openNotifications(): void {
-    this.router.navigate(['/employee/dashboard'], { fragment: 'notifications' });
+    this.router.navigateByUrl('/employee/notifications');
   }
 
   goProfile(): void {
@@ -159,7 +178,10 @@ export class EmployeePortalShellComponent implements OnInit, OnDestroy {
 
     this.employeeApi.getEmployeeNotifications(employeeId).subscribe({
       next: (response) => {
-        const unread = (response.items ?? []).filter((item) => item.statusCode !== 'READ').length;
+        const unread = (response.items ?? []).filter((item) => {
+          const status = (item.statusCode ?? '').toUpperCase();
+          return status !== 'READ' && status !== 'CANCELLED';
+        }).length;
         this.unreadNotifications.set(unread);
       },
       error: () => {

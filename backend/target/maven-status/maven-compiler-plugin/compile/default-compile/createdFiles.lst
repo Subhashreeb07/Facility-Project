@@ -114,6 +114,7 @@ com\example\hy_backend\dto\NotificationDtos$TemplateResponse.class
 com\example\hy_backend\dto\AuditDtos$AuditTrailResponse.class
 com\example\hy_backend\dto\AuthDtos$LoginRequest.class
 com\example\hy_backend\model\FieldOption.class
+com\example\hy_backend\dto\AuthDtos$RegisterRequest.class
 com\example\hy_backend\service\EmployeeService.class
 com\example\hy_backend\dto\BookingDtos$BookingFieldInput.class
 com\example\hy_backend\dto\BookingDtos$AdminBookingSearchItem.class
